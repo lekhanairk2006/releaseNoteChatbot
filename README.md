@@ -14,21 +14,21 @@ accurate, grounded answers using a local AI model.
 ---
 
 ## Architecture
-User → Streamlit UI (port 8501)
-↓
-FastAPI Backend (port 8000)
-↓
-┌───────────────────┐
-│   document_reader  │ ← reads PDF/TXT/CSV/Excel
-│   text_chunker     │ ← splits into 200-word chunks
-│   vector_store     │ ← embeds + stores in ChromaDB
-│   rag_agent        │ ← decides search vs direct answer
-│   rag_pipeline     │ ← generates answer using Ollama
-└───────────────────┘
-↓
-ChromaDB (local vector database)
-↓
-Ollama (local LLM - TinyLlama)
+
+    User → Streamlit UI (port 8501)
+                ↓
+           FastAPI Backend (port 8000)
+                ↓
+        document_reader  ← reads PDF/TXT/CSV/Excel
+        text_chunker     ← splits into 200-word chunks
+        vector_store     ← embeds + stores in ChromaDB
+        rag_agent        ← decides search vs direct answer
+        rag_pipeline     ← generates answer using Ollama
+                ↓
+           ChromaDB (local vector database)
+                ↓
+           Ollama (local LLM - TinyLlama)
+
 ---
 
 ## Tech Stack
@@ -44,73 +44,68 @@ Ollama (local LLM - TinyLlama)
 ---
 
 ## Project Structure
-releaseNoteChatbot/
-├── app.py                  ← Streamlit UI
-├── backend/
-│   ├── main.py             ← FastAPI entry point
-│   ├── api/
-│   │   └── routes.py       ← API endpoints
-│   ├── agents/
-│   │   └── rag_agent.py    ← Agent reasoning
-│   ├── core/
-│   │   ├── document_reader.py
-│   │   ├── text_chunker.py
-│   │   ├── vector_store.py
-│   │   └── rag_pipeline.py
-│   └── utils/
-│       ├── validator.py
-│       └── error_handler.py
-├── chroma_db/              ← Vector database
-├── uploaded_files/         ← Uploaded documents
-├── requirements.txt
-└── .env
+
+    releaseNoteChatbot/
+    ├── app.py                  ← Streamlit UI
+    ├── backend/
+    │   ├── main.py             ← FastAPI entry point
+    │   ├── api/
+    │   │   └── routes.py       ← API endpoints
+    │   ├── agents/
+    │   │   └── rag_agent.py    ← Agent reasoning
+    │   ├── core/
+    │   │   ├── document_reader.py
+    │   │   ├── text_chunker.py
+    │   │   ├── vector_store.py
+    │   │   └── rag_pipeline.py
+    │   └── utils/
+    │       ├── validator.py
+    │       └── error_handler.py
+    ├── chroma_db/              ← Vector database
+    ├── uploaded_files/         ← Uploaded documents
+    ├── requirements.txt
+    └── .env
+
 ---
 
 ## How to Run Locally
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/releaseNoteChatbot.git
-cd releaseNoteChatbot
-```
+**1. Clone the repository**
 
-### 2. Create virtual environment
-```bash
-python -m venv venv
-source venv/bin/activate  # Mac/Linux
-venv\Scripts\activate     # Windows
-```
+    git clone https://github.com/lekhanairk2006/releaseNoteChatbot.git
+    cd releaseNoteChatbot
 
-### 3. Install dependencies
-```bash
-pip install -r backend/requirements.txt
-pip install streamlit sentence-transformers
-```
+**2. Create virtual environment**
 
-### 4. Set up environment variables
-```bash
-cp .env.example .env
-# Edit .env and add your API keys
-```
+    python -m venv venv
+    source venv/bin/activate
 
-### 5. Install and start Ollama
+**3. Install dependencies**
+
+    pip install -r backend/requirements.txt
+    pip install streamlit sentence-transformers
+
+**4. Set up environment variables**
+
+    cp .env.example .env
+
+**5. Install and start Ollama**
+
 Download from https://ollama.com then:
-```bash
-ollama pull tinyllama
-ollama serve
-```
 
-### 6. Start FastAPI backend
-```bash
-uvicorn backend.main:app --reload
-```
+    ollama pull tinyllama
+    ollama serve
 
-### 7. Start Streamlit frontend
-```bash
-streamlit run app.py
-```
+**6. Start FastAPI backend**
 
-### 8. Open the app
+    uvicorn backend.main:app --reload
+
+**7. Start Streamlit frontend**
+
+    streamlit run app.py
+
+**8. Open the app**
+
 Go to http://localhost:8501
 
 ---
