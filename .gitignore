@@ -2,4 +2,7 @@ venv/
 .env
 __pycache__/
 *.pyc
+*.pyo
 chroma_db/
+uploaded_files/
+.DS_Store
