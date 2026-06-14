@@ -1,7 +1,22 @@
 import streamlit as st
 import requests
 
-API = "http://localhost:8000/api"
+import os
+import time
+import requests
+
+API = os.getenv("API_URL", "http://localhost:8000/api")
+
+def wait_for_backend():
+    for i in range(10):
+        try:
+            requests.get(f"{API.replace('/api', '')}/health", timeout=2)
+            return True
+        except:
+            time.sleep(3)
+    return False
+
+backend_ready = wait_for_backend()
 
 st.set_page_config(
     page_title="ReleaseNote Chatbot",
@@ -67,7 +82,7 @@ if "filename" in st.session_state:
     )
 
     if st.button("Ask") and question:
-        with st.spinner("Searching document..."):
+        with st.spinner("Searching and generating answer..."):
             response = requests.post(f"{API}/ask", json={
                 "question": question,
                 "filename": st.session_state.filename
@@ -76,14 +91,14 @@ if "filename" in st.session_state:
             if response.status_code == 200:
                 data = response.json()
                 answer = data.get("answer")
-                relevant_chunks = data.get("relevant_chunks", [])
                 tool_used = data.get("tool_used", "")
                 reasoning = data.get("reasoning", "")
+                relevant_chunks = data.get("relevant_chunks", [])
 
                 if tool_used == "search_document":
-                    st.info(f"🔍 Agent used: **Document Search**")
+                    st.info("🔍 Agent used: **Document Search**")
                 else:
-                    st.info(f"💡 Agent used: **Direct Answer**")
+                    st.info("💡 Agent used: **Direct Answer**")
 
                 st.caption(f"Reasoning: {reasoning}")
 
@@ -98,7 +113,4 @@ if "filename" in st.session_state:
                         st.write(chunk["text"])
                         st.divider()
             else:
-                error_detail = response.json().get("detail", "Unknown error")
-                st.error(f"Error: {error_detail}")
-else:
-    st.info("Upload a document above to get started")
+                error_detail

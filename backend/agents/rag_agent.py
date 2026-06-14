@@ -1,8 +1,11 @@
-import requests
+import os
+from groq import Groq
+from dotenv import load_dotenv
 from typing import List
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "tinyllama"
+load_dotenv()
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 SYSTEM_PROMPT = """You are an intelligent assistant with access to tools.
 When given a question, first decide which tool to use:
@@ -25,26 +28,25 @@ SEARCHING...
 Example 2:
 Question: What is the capital of France?
 DIRECT
-Paris is the capital of France.
-"""
+Paris is the capital of France."""
 
 def decide_and_answer(question: str, chunks: List[dict]) -> dict:
     # Step 1 — Ask agent to decide which tool to use
-    decision_prompt = f"{SYSTEM_PROMPT}\n\nQuestion: {question}"
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"Question: {question}"}
+        ],
+        max_tokens=256
+    )
 
-    response = requests.post(OLLAMA_URL, json={
-        "model": MODEL_NAME,
-        "prompt": decision_prompt,
-        "stream": False
-    })
-
-    agent_response = response.json().get("response", "").strip()
+    agent_response = response.choices[0].message.content.strip()
     lines = agent_response.split("\n")
     decision = lines[0].strip().upper()
 
     # Step 2 — Execute the right tool
     if "SEARCH" in decision:
-        # Use document chunks to answer
         if not chunks:
             return {
                 "tool_used": "search_document",
@@ -56,44 +58,40 @@ def decide_and_answer(question: str, chunks: List[dict]) -> dict:
         for i, chunk in enumerate(chunks):
             context += f"\n--- Chunk {i + 1} ---\n{chunk['text']}\n"
 
-        answer_prompt = f"""Answer this question using only the context below.
-If the answer is not in the context say "I could not find this in the document."
+        answer_response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "user", "content": f"""Answer this question using 
+only the context below. If the answer is not in the context say 
+"I could not find this in the document."
 
 Context:
 {context}
 
 Question: {question}
 
-Answer:"""
-
-        answer_response = requests.post(OLLAMA_URL, json={
-            "model": MODEL_NAME,
-            "prompt": answer_prompt,
-            "stream": False
-        })
-
-        answer = answer_response.json().get("response", "").strip()
+Answer:"""}
+            ],
+            max_tokens=1024
+        )
 
         return {
             "tool_used": "search_document",
-            "answer": answer,
+            "answer": answer_response.choices[0].message.content.strip(),
             "reasoning": "Question was about the document so I searched it."
         }
 
     else:
-        # Answer directly from general knowledge
-        direct_prompt = f"Answer this question clearly in 2-3 sentences: {question}"
-
-        direct_response = requests.post(OLLAMA_URL, json={
-            "model": MODEL_NAME,
-            "prompt": direct_prompt,
-            "stream": False
-        })
-
-        answer = direct_response.json().get("response", "").strip()
+        direct_response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "user", "content": f"Answer this question clearly in 2-3 sentences: {question}"}
+            ],
+            max_tokens=256
+        )
 
         return {
             "tool_used": "answer_directly",
-            "answer": answer,
+            "answer": direct_response.choices[0].message.content.strip(),
             "reasoning": "Question was general knowledge, no document search needed."
         }

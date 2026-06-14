@@ -1,8 +1,11 @@
-import requests
+import os
+from groq import Groq
+from dotenv import load_dotenv
 from typing import List
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "tinyllama"
+load_dotenv()
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def build_prompt(question: str, chunks: List[dict]) -> str:
     context = ""
@@ -27,13 +30,10 @@ def generate_answer(question: str, chunks: List[dict]) -> str:
 
     prompt = build_prompt(question, chunks)
 
-    response = requests.post(OLLAMA_URL, json={
-        "model": MODEL_NAME,
-        "prompt": prompt,
-        "stream": False
-    })
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1024
+    )
 
-    if response.status_code == 200:
-        return response.json().get("response", "No answer generated.")
-    else:
-        return f"Error generating answer: {response.status_code}"
+    return response.choices[0].message.content

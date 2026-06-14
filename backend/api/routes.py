@@ -5,7 +5,7 @@ from backend.core.text_chunker import chunk_document
 from backend.core.vector_store import store_chunks, search_chunks
 from backend.agents.rag_agent import decide_and_answer
 from backend.utils.validator import validate_question, validate_file_size
-from backend.utils.error_handler import (check_ollama_running,
+from backend.utils.error_handler import (check_groq_running,
                                           safe_generate,
                                           add_confidence_warning)
 import os, shutil
@@ -77,11 +77,11 @@ async def ask_question(request: QuestionRequest):
     # Safety 4 — validate question
     question = validate_question(request.question)
 
-    # Safety 5 — check Ollama is running
-    if not check_ollama_running():
+    # Safety 5 — check Groq is running
+    if not check_groq_running():
         raise HTTPException(
             status_code=503,
-            detail="AI model is not running. Please start Ollama: ollama serve"
+            detail="Could not connect to Groq API. Check your GROQ_API_KEY in .env"
         )
 
     # Retrieve relevant chunks
