@@ -9,7 +9,7 @@ enterprise documents and ask natural language questions about them.
 
 Upload any PDF, TXT, CSV, or Excel file and ask questions in plain English.
 The app finds the most relevant parts of your document and generates
-accurate, grounded answers using a local AI model.
+accurate, grounded answers using Groq's Llama 3.3 70B model.
 
 ---
 
@@ -23,11 +23,11 @@ accurate, grounded answers using a local AI model.
         text_chunker     ← splits into 200-word chunks
         vector_store     ← embeds + stores in ChromaDB
         rag_agent        ← decides search vs direct answer
-        rag_pipeline     ← generates answer using Ollama
+        rag_pipeline     ← generates answer using Groq LLM
                 ↓
            ChromaDB (local vector database)
                 ↓
-           Ollama (local LLM - TinyLlama)
+           Groq API (llama-3.3-70b-versatile)
 
 ---
 
@@ -39,7 +39,8 @@ accurate, grounded answers using a local AI model.
 | Backend | FastAPI | API server |
 | Embeddings | sentence-transformers | Free local embeddings |
 | Vector DB | ChromaDB | Semantic search |
-| LLM | Ollama + TinyLlama | Answer generation |
+| LLM | Groq (Llama 3.3 70B) | Answer generation |
+| Deployment | Docker + Docker Compose | Containerized deployment |
 
 ---
 
@@ -47,6 +48,9 @@ accurate, grounded answers using a local AI model.
 
     releaseNoteChatbot/
     ├── app.py                  ← Streamlit UI
+    ├── Dockerfile.backend      ← Docker config for FastAPI
+    ├── Dockerfile.frontend     ← Docker config for Streamlit
+    ├── docker-compose.yml      ← Orchestrates both containers
     ├── backend/
     │   ├── main.py             ← FastAPI entry point
     │   ├── api/
@@ -61,14 +65,45 @@ accurate, grounded answers using a local AI model.
     │   └── utils/
     │       ├── validator.py
     │       └── error_handler.py
-    ├── chroma_db/              ← Vector database
-    ├── uploaded_files/         ← Uploaded documents
+    ├── chroma_db/              ← Vector database (auto-created)
+    ├── uploaded_files/         ← Uploaded documents (auto-created)
     ├── requirements.txt
     └── .env
 
 ---
 
-## How to Run Locally
+## How to Run with Docker (Recommended)
+
+**1. Clone the repository**
+
+    git clone https://github.com/lekhanairk2006/releaseNoteChatbot.git
+    cd releaseNoteChatbot
+
+**2. Set up environment variables**
+
+    cp .env.example .env
+
+Edit `.env` and add your Groq API key:
+
+    GROQ_API_KEY=your_groq_key_here
+    APP_NAME=ReleaseNote Chatbot
+    DEBUG=True
+
+**3. Start the app**
+
+    docker-compose up
+
+**4. Open the app**
+
+Go to http://localhost:8501
+
+**5. Stop the app**
+
+    docker-compose down
+
+---
+
+## How to Run Locally (Without Docker)
 
 **1. Clone the repository**
 
@@ -82,29 +117,24 @@ accurate, grounded answers using a local AI model.
 
 **3. Install dependencies**
 
-    pip install -r backend/requirements.txt
-    pip install streamlit sentence-transformers
+    pip install -r requirements.txt
+    pip install sentence-transformers groq
 
 **4. Set up environment variables**
 
     cp .env.example .env
 
-**5. Install and start Ollama**
+Edit `.env` and add your Groq API key.
 
-Download from https://ollama.com then:
-
-    ollama pull tinyllama
-    ollama serve
-
-**6. Start FastAPI backend**
+**5. Start FastAPI backend**
 
     uvicorn backend.main:app --reload
 
-**7. Start Streamlit frontend**
+**6. Start Streamlit frontend (new terminal)**
 
     streamlit run app.py
 
-**8. Open the app**
+**7. Open the app**
 
 Go to http://localhost:8501
 
@@ -118,17 +148,27 @@ Go to http://localhost:8501
 4. **Store** — vectors saved in ChromaDB
 5. **Query** — your question is also converted to a vector
 6. **Search** — ChromaDB finds the most similar chunks
-7. **Generate** — chunks + question sent to TinyLlama
+7. **Generate** — chunks + question sent to Groq LLM
 8. **Answer** — grounded response returned to you
+
+---
+
+## How the Agent Works
+
+The app uses an AI agent that decides how to answer each question:
+
+- **Document Search** — used for questions about the uploaded document
+- **Direct Answer** — used for general knowledge questions
+
+The agent shows which tool it used and its reasoning for every response.
 
 ---
 
 ## Known Limitations
 
-- TinyLlama is a small model — answers may be verbose or imprecise
-- Scanned PDFs without OCR text are not supported
 - Maximum file size is 10MB
-- Requires Ollama running locally
+- Requires a Groq API key (free at console.groq.com)
+- ChromaDB data is stored locally and resets if Docker volumes are removed
 - Not suitable for production without authentication
 
 ---
@@ -136,7 +176,4 @@ Go to http://localhost:8501
 ## Future Improvements
 
 - Add user authentication
-- Support larger LLMs (Llama 3, Mistral)
-- Add multi-document support
-- Deploy to cloud (Railway, Render)
 - Add conversation history
